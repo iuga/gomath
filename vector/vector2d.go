@@ -61,3 +61,8 @@ func (v *Vector2D[T]) Dot(w *Vector2D[T]) T {
 func (v *Vector2D[T]) Cross(w *Vector2D[T]) T {
 	return v.X*w.Y + v.Y*w.X
 }
+
+// Returns the squared distance between this vector and w.
+func (v *Vector2D[T]) DistanceSquaredTo(w *Vector2D[T]) T {
+	return (v.X-w.X)*(v.X-w.X) + (v.Y-w.Y)*(v.Y-w.Y)
+}
