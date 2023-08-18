@@ -66,3 +66,14 @@ func (v *Vector2D[T]) Cross(w *Vector2D[T]) T {
 func (v *Vector2D[T]) DistanceSquaredTo(w *Vector2D[T]) T {
 	return (v.X-w.X)*(v.X-w.X) + (v.Y-w.Y)*(v.Y-w.Y)
 }
+
+// Returns the result of the linear interpolation between this vector and to by amount weight.
+// weight is on the range of 0.0 to 1.0, representing the amount of interpolation.
+// interpolation = A * (1 - t) + B * t =  A + (B - A) * t
+func (v *Vector2D[T]) LERP(to *Vector2D[T], weight float64) *Vector2D[T] {
+	// return p_from + (p_to - p_from) * p_weight;
+	return New2D[T](
+		v.X+(to.X-v.X)*T(weight),
+		v.Y+(to.Y-v.Y)*T(weight),
+	)
+}
