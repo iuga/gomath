@@ -66,6 +66,11 @@ func (v *Vector2D[T]) Cross(w *Vector2D[T]) T {
 	return v.X*w.Y + v.Y*w.X
 }
 
+// Returns the distance between this vector and w.
+func (v *Vector2D[T]) DistanceTo(w *Vector2D[T]) T {
+	return T(math.Sqrt(float64(v.DistanceSquaredTo(w))))
+}
+
 // Returns the squared distance between this vector and w.
 func (v *Vector2D[T]) DistanceSquaredTo(w *Vector2D[T]) T {
 	return (v.X-w.X)*(v.X-w.X) + (v.Y-w.Y)*(v.Y-w.Y)
