@@ -93,8 +93,8 @@ func (v *Vector2D[T]) Add(to *Vector2D[T]) *Vector2D[T] {
 }
 
 // Subtract one vector from another
-func (v *Vector2D[T]) Subtract(to *Vector2D[T]) *Vector2D[T] {
-	return New2D[T](v.X-to.X, v.Y-to.Y)
+func (v *Vector2D[T]) Subtract(u *Vector2D[T]) *Vector2D[T] {
+	return New2D[T](v.X-u.X, v.Y-u.Y)
 }
 
 // Lenght returns the length (magnitude) of this vector.
@@ -117,9 +117,9 @@ func (v *Vector2D[T]) Normalized() *Vector2D[T] {
 // MoveToward returns a new vector moved toward to by the fixed delta amount. Will not go past the final value.
 func (v *Vector2D[T]) MoveToward(to *Vector2D[T], delta T) *Vector2D[T] {
 	vd := to.Subtract(v)
-	s := vd.Length()
-	if s <= delta || s < T(EPSILON) {
+	l := vd.Length()
+	if l <= delta || l < T(EPSILON) {
 		return New2D[T](to.X, to.Y)
 	}
-	return New2D[T]((v.X+vd.X)/s*delta, (v.Y+vd.Y)/s*delta)
+	return New2D[T](v.X+vd.X/l*delta, v.Y+vd.Y/l*delta)
 }
