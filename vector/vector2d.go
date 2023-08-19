@@ -1,10 +1,14 @@
 package vector
 
 import (
+	"math"
+
 	"golang.org/x/exp/constraints"
 )
 
 var (
+	// EPSILON define small comparisons
+	EPSILON = float64(0.00001)
 	// Integer Zero vector, a vector with all components set to 0.
 	ZERO = New2D[int](0, 0)
 	// Integer One vector, a vector with all components set to 1.
@@ -76,4 +80,41 @@ func (v *Vector2D[T]) LERP(to *Vector2D[T], weight float64) *Vector2D[T] {
 		v.X+(to.X-v.X)*T(weight),
 		v.Y+(to.Y-v.Y)*T(weight),
 	)
+}
+
+// Add one vector to another
+func (v *Vector2D[T]) Add(to *Vector2D[T]) *Vector2D[T] {
+	return New2D[T](v.X+to.X, v.Y+to.Y)
+}
+
+// Subtract one vector from another
+func (v *Vector2D[T]) Subtract(to *Vector2D[T]) *Vector2D[T] {
+	return New2D[T](v.X-to.X, v.Y-to.Y)
+}
+
+// Lenght returns the length (magnitude) of this vector.
+func (v *Vector2D[T]) Length() T {
+	return T(math.Sqrt(float64(v.X*v.X + v.Y*v.Y)))
+}
+
+// Returns the result of scaling the vector to unit length. Equivalent to v / v.length().
+// Note: This function may return incorrect values if the input vector length is near zero.
+func (v *Vector2D[T]) Normalized() *Vector2D[T] {
+	// real_t l = x * x + y * y;
+	l := v.X*v.X + v.Y*v.Y
+	if l != 0 {
+		l = T(math.Sqrt(float64(l)))
+		return New2D[T](v.X/l, v.Y/l)
+	}
+	return New2D[T](v.X, v.Y)
+}
+
+// MoveToward returns a new vector moved toward to by the fixed delta amount. Will not go past the final value.
+func (v *Vector2D[T]) MoveToward(to *Vector2D[T], delta T) *Vector2D[T] {
+	vd := to.Subtract(v)
+	s := vd.Length()
+	if s <= delta || s < T(EPSILON) {
+		return New2D[T](to.X, to.Y)
+	}
+	return New2D[T]((v.X+vd.X)/s*delta, (v.Y+vd.Y)/s*delta)
 }
