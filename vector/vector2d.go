@@ -123,3 +123,9 @@ func (v *Vector2D[T]) MoveToward(to *Vector2D[T], delta T) *Vector2D[T] {
 	}
 	return New2D[T](v.X+vd.X/l*delta, v.Y+vd.Y/l*delta)
 }
+
+// DirectionTo returns the normalized vector pointing from this vector to to.
+// This is equivalent to using (b - a).normalized().
+func (v *Vector2D[T]) DirectionTo(to *Vector2D[T]) *Vector2D[T] {
+	return to.Subtract(v).Normalized()
+}
