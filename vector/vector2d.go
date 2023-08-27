@@ -129,3 +129,8 @@ func (v *Vector2D[T]) MoveToward(to *Vector2D[T], delta T) *Vector2D[T] {
 func (v *Vector2D[T]) DirectionTo(to *Vector2D[T]) *Vector2D[T] {
 	return to.Subtract(v).Normalized()
 }
+
+// Clone returns a deep-copy of the current vector.
+func (v *Vector2D[T]) Clone() *Vector2D[T] {
+	return New2D[T](v.X, v.Y)
+}
