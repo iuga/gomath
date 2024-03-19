@@ -17,6 +17,8 @@ type Rect2D[T Number] struct {
 }
 
 // New2D constructs a new VRect2D from the given position and size.
+// position is the rectangle start x and y
+// size is the rectangle width and height
 func New2D[T Number](position, size *vector.Vector2D[T]) *Rect2D[T] {
 	return &Rect2D[T]{position: position, size: size}
 }
@@ -49,4 +51,14 @@ func (r *Rect2D[T]) GetCenter() *vector.Vector2D[T] {
 // GetArea returns the rectangle's area. This is equivalent to size.x * size.y
 func (r *Rect2D[T]) GetArea() T {
 	return r.size.X * r.size.Y
+}
+
+// GetPosition returns a vector with the starting point of the rectangle as x and y
+func (r *Rect2D[T]) GetPosition() *vector.Vector2D[T] {
+	return r.position
+}
+
+// GetSize returns a vector with the current size of the Rectangle as width and height
+func (r *Rect2D[T]) GetSize() *vector.Vector2D[T] {
+	return r.size
 }
