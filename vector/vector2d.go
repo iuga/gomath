@@ -130,7 +130,19 @@ func (v *Vector2D[T]) DirectionTo(to *Vector2D[T]) *Vector2D[T] {
 	return to.Subtract(v).Normalized()
 }
 
+// ABS returns a new vector with all components in absolute values (i.e. positive).`
+func (v *Vector2D[T]) Abs() *Vector2D[T] {
+	return New2D[T](v.abs(v.X), v.abs(v.Y))
+}
+
 // Clone returns a deep-copy of the current vector.
 func (v *Vector2D[T]) Clone() *Vector2D[T] {
 	return New2D[T](v.X, v.Y)
+}
+
+func (v *Vector2D[T]) abs(x T) T {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
