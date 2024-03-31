@@ -15,8 +15,8 @@ type Number interface {
 type Matrix2DOpts[T Number] func(*Matrix2D[T])
 
 type Matrix2D[T Number] struct {
-	values [][]T
-	shape  *vector.Vector2D[int]
+	Values [][]T
+	Shape  *vector.Vector2D[int]
 }
 
 // New2D constructs a new Matrix2D from the given shape (x=rows, y=columns).
@@ -27,8 +27,8 @@ func New2D[T Number](shape *vector.Vector2D[int], opts ...Matrix2DOpts[T]) *Matr
 		rows = append(rows, col)
 	}
 	m := &Matrix2D[T]{
-		values: rows,
-		shape:  shape,
+		Values: rows,
+		Shape:  shape,
 	}
 	for _, opt := range opts {
 		opt(m)
@@ -73,19 +73,19 @@ func WithConstant[T Number](k T) Matrix2DOpts[T] {
 
 // Set a value in the given position as (x, y) == (column, row)
 func (m Matrix2D[T]) Set(position *vector.Vector2D[int], value T) error {
-	if position.X >= m.shape.Y || position.Y >= m.shape.X || position.X < 0 || position.Y < 0 {
-		return fmt.Errorf("out of bound position %v with shape %v", position, m.shape)
+	if position.X >= m.Shape.Y || position.Y >= m.Shape.X || position.X < 0 || position.Y < 0 {
+		return fmt.Errorf("out of bound position %v with shape %v", position, m.Shape)
 	}
-	m.values[position.Y][position.X] = value
+	m.Values[position.Y][position.X] = value
 	return nil
 }
 
 // At returns the value of the matrix AT that position
 func (m Matrix2D[T]) At(position *vector.Vector2D[int]) (T, error) {
-	if position.X >= m.shape.Y || position.Y >= m.shape.X || position.X < 0 || position.Y < 0 {
-		return 0, fmt.Errorf("out of bound position %v with shape %v", position, m.shape)
+	if position.X >= m.Shape.Y || position.Y >= m.Shape.X || position.X < 0 || position.Y < 0 {
+		return 0, fmt.Errorf("out of bound position %v with shape %v", position, m.Shape)
 	}
-	return m.values[position.Y][position.X], nil
+	return m.Values[position.Y][position.X], nil
 }
 
 // Slice returns a subset of the matrix as a slice of slices taking two coordinates.
@@ -108,29 +108,29 @@ func (m Matrix2D[T]) At(position *vector.Vector2D[int]) (T, error) {
 func (m Matrix2D[T]) Slice(x *vector.Vector2D[int], y *vector.Vector2D[int]) (*Matrix2D[T], error) {
 	// This selects a half-open range which includes the first element, but excludes the last one.
 	sShape := vector.New2D[int]((x.Y + 1 - x.X), (y.Y + 1 - y.X))
-	if sShape.X < 0 || sShape.Y < 0 || sShape.X > m.shape.X || sShape.Y > m.shape.Y {
-		return nil, fmt.Errorf("slice %v out of bounds on matrix of shape %v", sShape, m.shape)
+	if sShape.X < 0 || sShape.Y < 0 || sShape.X > m.Shape.X || sShape.Y > m.Shape.Y {
+		return nil, fmt.Errorf("slice %v out of bounds on matrix of shape %v", sShape, m.Shape)
 	}
-	rows := m.values[y.X : y.Y+1]
+	rows := m.Values[y.X : y.Y+1]
 	vrows := make([][]T, len(rows))
 	for row := range rows {
 		vrows[row] = rows[row][x.X : x.Y+1]
 	}
 	return &Matrix2D[T]{
-		values: vrows,
-		shape:  sShape,
+		Values: vrows,
+		Shape:  sShape,
 	}, nil
 }
 
 // Update the matrix data with another matrix starting in position x,y
 func (m *Matrix2D[T]) Update(position *vector.Vector2D[int], matrix *Matrix2D[T]) error {
 	// If the position is out of bounds, fail
-	if position.X >= m.shape.X || position.Y >= m.shape.Y {
-		return fmt.Errorf("update starting position %v is out of bounds %v", position, m.shape)
+	if position.X >= m.Shape.X || position.Y >= m.Shape.Y {
+		return fmt.Errorf("update starting position %v is out of bounds %v", position, m.Shape)
 	}
 	// If section is out of bounds, fail
-	if position.X+matrix.shape.X >= m.shape.X || position.Y+matrix.shape.Y >= m.shape.Y {
-		return fmt.Errorf("slide to update is out of bounds %v", m.shape)
+	if position.X+matrix.Shape.X >= m.Shape.X || position.Y+matrix.Shape.Y >= m.Shape.Y {
+		return fmt.Errorf("slide to update is out of bounds %v", m.Shape)
 	}
 	rows := matrix.GetShape().X
 	cols := matrix.GetShape().Y
@@ -148,24 +148,24 @@ func (m *Matrix2D[T]) Update(position *vector.Vector2D[int], matrix *Matrix2D[T]
 
 // GetShape returns a vector representing the dimensionality of the Matrix2D as (rows, columns).
 func (m Matrix2D[T]) GetShape() *vector.Vector2D[int] {
-	return m.shape
+	return m.Shape
 }
 
 // GetValues return the invernal values as a slice of slices
 func (m Matrix2D[T]) GetValues() [][]T {
-	return m.values
+	return m.Values
 }
 
 // String returns a human-readable representation of the Matrix2D
 func (m Matrix2D[T]) String() string {
 	var b strings.Builder
 	b.WriteString("\n")
-	for _, row := range m.values {
+	for _, row := range m.Values {
 		for _, col := range row {
 			b.WriteString(fmt.Sprintf(" %04v ", col))
 		}
 		b.WriteString("\n")
 	}
-	b.WriteString(fmt.Sprintf("shape: (%d,%d)\n", m.shape.X, m.shape.Y))
+	b.WriteString(fmt.Sprintf("shape: (%d,%d)\n", m.Shape.X, m.Shape.Y))
 	return b.String()
 }
