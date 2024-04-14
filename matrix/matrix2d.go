@@ -129,8 +129,8 @@ func (m *Matrix2D[T]) Update(position *vector.Vector2D[int], matrix *Matrix2D[T]
 		return fmt.Errorf("update starting position %v is out of bounds %v", position, m.Shape)
 	}
 	// If section is out of bounds, fail
-	if position.X+matrix.Shape.X >= m.Shape.X || position.Y+matrix.Shape.Y >= m.Shape.Y {
-		return fmt.Errorf("slide to update is out of bounds %v", m.Shape)
+	if position.X+matrix.Shape.X > m.Shape.X || position.Y+matrix.Shape.Y > m.Shape.Y {
+		return fmt.Errorf("slide to update is out of bounds on: %v base: %v update: %v", position, m.Shape, matrix.Shape)
 	}
 	rows := matrix.GetShape().X
 	cols := matrix.GetShape().Y
