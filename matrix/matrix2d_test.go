@@ -9,7 +9,9 @@ import (
 
 func TestMatrix2DSlice(t *testing.T) {
 
-	m := New2D[int](vector.New2D[int](4, 4))
+	m, err := New2D[int](vector.New2D[int](4, 4))
+	require.NoError(t, err)
+
 	m.Set(vector.New2D[int](0, 0), 1)
 	m.Set(vector.New2D[int](1, 1), 1)
 	m.Set(vector.New2D[int](2, 2), 1)
@@ -18,11 +20,11 @@ func TestMatrix2DSlice(t *testing.T) {
 
 	s, _ := m.Slice(vector.New2D[int](1, 3), vector.New2D[int](0, 1))
 	t.Log(s)
-	t.Fail()
 }
 
 func TestMatrix2D(t *testing.T) {
-	m := New2D[int](vector.New2D[int](5, 6))
+	m, err := New2D[int](vector.New2D[int](5, 6))
+	require.NoError(t, err)
 
 	m.Set(vector.New2D[int](0, 0), 1)
 	m.Set(vector.New2D[int](1, 1), 1)
@@ -30,7 +32,6 @@ func TestMatrix2D(t *testing.T) {
 	m.Set(vector.New2D[int](3, 3), 1)
 	m.Set(vector.New2D[int](4, 4), 1)
 	t.Log(m)
-	t.Fail()
 
 	s, err := m.Slice(vector.New2D[int](1, 4), vector.New2D[int](1, 2))
 	require.NoError(t, err)

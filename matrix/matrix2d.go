@@ -12,7 +12,7 @@ type Number interface {
 	constraints.Integer | constraints.Float
 }
 
-type Matrix2DOpts[T Number] func(*Matrix2D[T])
+type Matrix2DOpts[T Number] func(*Matrix2D[T]) error
 
 type Matrix2D[T Number] struct {
 	Values [][]T
@@ -20,7 +20,7 @@ type Matrix2D[T Number] struct {
 }
 
 // New2D constructs a new Matrix2D from the given shape (x=rows, y=columns).
-func New2D[T Number](shape *vector.Vector2D[int], opts ...Matrix2DOpts[T]) *Matrix2D[T] {
+func New2D[T Number](shape *vector.Vector2D[int], opts ...Matrix2DOpts[T]) (*Matrix2D[T], error) {
 	rows := make([][]T, 0, shape.X)
 	for i := 0; i < shape.X; i++ {
 		col := make([]T, shape.Y)
@@ -31,42 +31,56 @@ func New2D[T Number](shape *vector.Vector2D[int], opts ...Matrix2DOpts[T]) *Matr
 		Shape:  shape,
 	}
 	for _, opt := range opts {
-		opt(m)
+		if err := opt(m); err != nil {
+			return nil, err
+		}
 	}
-	return m
+	return m, nil
 }
 
 // WithData will use the slice of slice values to initialize the matrix
 func WithData[T Number](data [][]T) Matrix2DOpts[T] {
-	f := func(m *Matrix2D[T]) {
+	f := func(m *Matrix2D[T]) error {
 		if data == nil {
-			return
+			return nil
+		}
+		if len(data) == 0 {
+			return fmt.Errorf("WithData(...) empty data not alowed. Use WithConstant(...) instead.")
 		}
 		if len(data) != m.GetShape().Y {
-			return
+			return fmt.Errorf("WithData(...) 'y' shape missmatch -> data: %v matrix: %v", len(data), m.GetShape().Y)
 		}
-		for y, row := range data {
-			for x, v := range row {
-				m.Set(vector.New2D[int](x, y), v)
+		if len(data[0]) != m.GetShape().X {
+			return fmt.Errorf("WithData(...) 'x' shape missmatch -> data: %v matrix: %v", len(data), m.GetShape().Y)
+		}
+		for yRow, row := range data {
+			for xCol, v := range row {
+				if err := m.Set(vector.New2D[int](xCol, yRow), v); err != nil {
+					return err
+				}
 			}
 		}
+		return nil
 	}
 	return f
 }
 
 // WithConstant initialized the matrix with a constant value. E.g: 1
 func WithConstant[T Number](k T) Matrix2DOpts[T] {
-	f := func(m *Matrix2D[T]) {
+	f := func(m *Matrix2D[T]) error {
 		if k == 0 {
-			return // Zero Value
+			return nil // Zero Value, nothing to do...
 		}
 		rows := m.GetShape().X
 		cols := m.GetShape().Y
 		for y := 0; y < rows; y++ {
 			for x := 0; x < cols; x++ {
-				m.Set(vector.New2D[int](x, y), k)
+				if err := m.Set(vector.New2D[int](x, y), k); err != nil {
+					return err
+				}
 			}
 		}
+		return nil
 	}
 	return f
 }
