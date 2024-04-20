@@ -1,6 +1,7 @@
 package matrix
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -12,18 +13,52 @@ type Number interface {
 	constraints.Integer | constraints.Float
 }
 
+// Shape declares the shape of the matrix as Width/Rows and Height/Columns
+type Shape struct {
+	// The Width or Columns of the Matrix
+	Width int `json:"width"`
+	// The Height or Rows of the Matrix
+	Height int `json:"height"`
+}
+
+// NewShape returns a new Matrix shape
+func NewShape(width int, height int) *Shape {
+	return &Shape{
+		Width:  width,
+		Height: height,
+	}
+}
+
+// Position declares a coordinate in the array as row(x) and column(y)
+type Position struct {
+	// The row to locate
+	Row int `json:"row"`
+	// The column to locate
+	Column int `json:"column"`
+}
+
+// NewPosition returns a new Matrix position to be used in lookups and slices
+func NewPosition(row int, column int) *Position {
+	return &Position{
+		Row:    row,
+		Column: column,
+	}
+}
+
 type Matrix2DOpts[T Number] func(*Matrix2D[T]) error
 
 type Matrix2D[T Number] struct {
+	// Values of the matrix
 	Values [][]T
-	Shape  *vector.Vector2D[int]
+	// Shape of the matrix as (x=width and y=height)
+	Shape *Shape
 }
 
-// New2D constructs a new Matrix2D from the given shape (x=rows, y=columns).
-func New2D[T Number](shape *vector.Vector2D[int], opts ...Matrix2DOpts[T]) (*Matrix2D[T], error) {
-	rows := make([][]T, 0, shape.X)
-	for i := 0; i < shape.X; i++ {
-		col := make([]T, shape.Y)
+// New2D constructs a new Matrix2D from the given shape (x=width and y=height).
+func New2D[T Number](shape *Shape, opts ...Matrix2DOpts[T]) (*Matrix2D[T], error) {
+	rows := make([][]T, 0, shape.Height)
+	for i := 0; i < shape.Height; i++ {
+		col := make([]T, shape.Width)
 		rows = append(rows, col)
 	}
 	m := &Matrix2D[T]{
@@ -42,20 +77,20 @@ func New2D[T Number](shape *vector.Vector2D[int], opts ...Matrix2DOpts[T]) (*Mat
 func WithData[T Number](data [][]T) Matrix2DOpts[T] {
 	f := func(m *Matrix2D[T]) error {
 		if data == nil {
-			return nil
+			return errors.New("WithData(...) should have a value to initialize the matrix")
 		}
 		if len(data) == 0 {
 			return fmt.Errorf("WithData(...) empty data not alowed. Use WithConstant(...) instead.")
 		}
-		if len(data) != m.GetShape().Y {
-			return fmt.Errorf("WithData(...) 'y' shape missmatch -> data: %v matrix: %v", len(data), m.GetShape().Y)
+		if len(data) != m.GetShape().Height {
+			return fmt.Errorf("WithData(...) 'height/rows' shape missmatch -> data: %v matrix: %v", len(data), m.GetShape())
 		}
-		if len(data[0]) != m.GetShape().X {
-			return fmt.Errorf("WithData(...) 'x' shape missmatch -> data: %v matrix: %v", len(data), m.GetShape().Y)
+		if len(data[0]) != m.GetShape().Width {
+			return fmt.Errorf("WithData(...) 'width/cols' shape missmatch -> data: %v matrix: %v", len(data), m.GetShape())
 		}
 		for yRow, row := range data {
 			for xCol, v := range row {
-				if err := m.Set(vector.New2D[int](xCol, yRow), v); err != nil {
+				if err := m.Set(&Position{yRow, xCol}, v); err != nil {
 					return err
 				}
 			}
@@ -71,11 +106,9 @@ func WithConstant[T Number](k T) Matrix2DOpts[T] {
 		if k == 0 {
 			return nil // Zero Value, nothing to do...
 		}
-		rows := m.GetShape().X
-		cols := m.GetShape().Y
-		for y := 0; y < rows; y++ {
-			for x := 0; x < cols; x++ {
-				if err := m.Set(vector.New2D[int](x, y), k); err != nil {
+		for y := 0; y < m.GetShape().Height; y++ {
+			for x := 0; x < m.GetShape().Width; x++ {
+				if err := m.Set(NewPosition(y, x), k); err != nil {
 					return err
 				}
 			}
@@ -85,21 +118,21 @@ func WithConstant[T Number](k T) Matrix2DOpts[T] {
 	return f
 }
 
-// Set a value in the given position as (x, y) == (column, row)
-func (m Matrix2D[T]) Set(position *vector.Vector2D[int], value T) error {
-	if position.X >= m.Shape.Y || position.Y >= m.Shape.X || position.X < 0 || position.Y < 0 {
+// Set a value in the given position as (y, x) == (row, column)
+func (m Matrix2D[T]) Set(position *Position, value T) error {
+	if m.isPositionOutOfBounds(position) {
 		return fmt.Errorf("out of bound position %v with shape %v", position, m.Shape)
 	}
-	m.Values[position.Y][position.X] = value
+	m.Values[position.Row][position.Column] = value
 	return nil
 }
 
 // At returns the value of the matrix AT that position
-func (m Matrix2D[T]) At(position *vector.Vector2D[int]) (T, error) {
-	if position.X >= m.Shape.Y || position.Y >= m.Shape.X || position.X < 0 || position.Y < 0 {
+func (m Matrix2D[T]) At(position *Position) (T, error) {
+	if m.isPositionOutOfBounds(position) {
 		return 0, fmt.Errorf("out of bound position %v with shape %v", position, m.Shape)
 	}
-	return m.Values[position.Y][position.X], nil
+	return m.Values[position.Row][position.Column], nil
 }
 
 // Slice returns a subset of the matrix as a slice of slices taking two coordinates.
@@ -121,9 +154,9 @@ func (m Matrix2D[T]) At(position *vector.Vector2D[int]) (T, error) {
 // [1 0 0]
 func (m Matrix2D[T]) Slice(x *vector.Vector2D[int], y *vector.Vector2D[int]) (*Matrix2D[T], error) {
 	// This selects a half-open range which includes the first element, but excludes the last one.
-	sShape := vector.New2D[int]((x.Y + 1 - x.X), (y.Y + 1 - y.X))
-	if sShape.X < 0 || sShape.Y < 0 || sShape.X > m.Shape.X || sShape.Y > m.Shape.Y {
-		return nil, fmt.Errorf("slice %v out of bounds on matrix of shape %v", sShape, m.Shape)
+	shape := &Shape{Width: (x.Y + 1 - x.X), Height: (x.Y + 1 - x.X)}
+	if shape.Width < 0 || shape.Height < 0 || shape.Width > m.GetShape().Width || shape.Height > m.GetShape().Height {
+		return nil, fmt.Errorf("slice %v out of bounds on matrix of shape %v", shape, m.Shape)
 	}
 	rows := m.Values[y.X : y.Y+1]
 	vrows := make([][]T, len(rows))
@@ -132,36 +165,34 @@ func (m Matrix2D[T]) Slice(x *vector.Vector2D[int], y *vector.Vector2D[int]) (*M
 	}
 	return &Matrix2D[T]{
 		Values: vrows,
-		Shape:  sShape,
+		Shape:  shape,
 	}, nil
 }
 
 // Update the matrix data with another matrix starting in position x,y
-func (m *Matrix2D[T]) Update(position *vector.Vector2D[int], matrix *Matrix2D[T]) error {
+func (m *Matrix2D[T]) Update(position *Position, matrix *Matrix2D[T]) error {
 	// If the position is out of bounds, fail
-	if position.X >= m.Shape.X || position.Y >= m.Shape.Y {
+	if m.isPositionOutOfBounds(position) {
 		return fmt.Errorf("update starting position %v is out of bounds %v", position, m.Shape)
 	}
 	// If section is out of bounds, fail
-	if position.X+matrix.Shape.X > m.Shape.X || position.Y+matrix.Shape.Y > m.Shape.Y {
+	if position.Column+matrix.GetShape().Width > m.GetShape().Width || position.Row+matrix.GetShape().Height > m.GetShape().Height {
 		return fmt.Errorf("slide to update is out of bounds on: %v base: %v update: %v", position, m.Shape, matrix.Shape)
 	}
-	rows := matrix.GetShape().X
-	cols := matrix.GetShape().Y
-	for y := 0; y < rows; y++ {
-		for x := 0; x < cols; x++ {
-			v, err := matrix.At(vector.New2D[int](x, y))
+	for y := 0; y < matrix.GetShape().Height; y++ {
+		for x := 0; x < matrix.GetShape().Width; x++ {
+			v, err := matrix.At(NewPosition(y, x))
 			if err != nil {
 				return err
 			}
-			m.Set(vector.New2D[int](x+position.X, y+position.Y), v)
+			m.Set(NewPosition(y+position.Row, x+position.Column), v)
 		}
 	}
 	return nil
 }
 
 // GetShape returns a vector representing the dimensionality of the Matrix2D as (rows, columns).
-func (m Matrix2D[T]) GetShape() *vector.Vector2D[int] {
+func (m Matrix2D[T]) GetShape() *Shape {
 	return m.Shape
 }
 
@@ -180,6 +211,10 @@ func (m Matrix2D[T]) String() string {
 		}
 		b.WriteString("\n")
 	}
-	b.WriteString(fmt.Sprintf("shape: (%d,%d)\n", m.Shape.X, m.Shape.Y))
+	b.WriteString(fmt.Sprintf("shape: (h:%d,w:%d)\n", m.Shape.Height, m.Shape.Width))
 	return b.String()
+}
+
+func (m Matrix2D[T]) isPositionOutOfBounds(p *Position) bool {
+	return p.Row >= m.GetShape().Height || p.Column >= m.GetShape().Width || p.Row < 0 || p.Column < 0
 }
